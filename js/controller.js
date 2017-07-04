@@ -41,6 +41,8 @@ OO.plugin("Html5Skin", function (OO, _, $, W) {
       "isLiveStream": false,
       "screenToShow": null,
       "playerState": null,
+      "playbackRate": 1.0,
+      "playbackRateSupported": Utils.isPlaybackRateSupported(),
       "discoveryData": null,
       "forceCountDownTimerOnEndScreen": false,
       "isPlayingAd": false,
@@ -1243,6 +1245,23 @@ OO.plugin("Html5Skin", function (OO, _, $, W) {
           this.mb.publish(OO.EVENTS.PAUSE);
           break;
       }
+    },
+
+    setPlaybackRate: function(rate) {
+      var playbackRate = Math.max(Math.min(rate, CONSTANTS.STATE.MAX_PLAYBACK_RATE), CONSTANTS.STATE.MIN_PLAYBACK_RATE);
+      if (this.state.playbackRate !== playbackRate) {
+        document.querySelector('video').playbackRate = playbackRate;
+        this.state.playbackRate = playbackRate;
+      }
+    },
+
+    getPlaybackRate: function() {
+      var videoElement = document.querySelector('video');
+      var state = this.state;
+      if (videoElement.playbackRate !== state.playbackRate) {
+        videoElement.playbackRate = state.playbackRate;
+      }
+      return state.playbackRate;
     },
 
     seek: function(seconds) {

@@ -14,6 +14,11 @@ var React = require('react'),
     Logo = require('./logo'),
     Icon = require('./icon');
 
+var ReactMenu = require('rc-menu');
+var Menu = ReactMenu.default;
+var SubMenu = ReactMenu.SubMenu;
+var MenuItem = ReactMenu.Item;
+
 var ControlBar = React.createClass({
   getInitialState: function() {
     this.isMobile = this.props.controller.state.isMobile;
@@ -22,8 +27,33 @@ var ControlBar = React.createClass({
     this.moreOptionsItems = null;
 
     return {
+      openKeys: [],
       currentVolumeHead: 0
     };
+  },
+
+  handlePlaybackRate: function (data) {
+    var rate = parseFloat(data.key);
+    if (isNaN(rate)) {
+      rate = CONSTANTS.TATE.MIN_PLAYBACK_RATE;
+    }
+    this.props.controller.setPlaybackRate(rate);
+    this.onOpenChange([]);
+  },
+
+  onOpenChange: function (keys) {
+    this.setState({
+      openKeys: keys
+    }, function () {
+      var items = document.querySelectorAll('.oo-popup-menu');
+      for (var i = 0; i < items.length; i++) {
+        if (keys.length === 0) {
+          items[i].classList.add('oo-disable');
+        } else {
+          items[i].classList.remove('oo-disable');
+        }
+      }
+    });
   },
 
   componentDidMount: function() {
@@ -460,6 +490,28 @@ var ControlBar = React.createClass({
       }
 
       finalControlBarItems.push(controlItemTemplates[collapsedControlBarItems[k].name]);
+    }
+
+    if (this.props.controller.state.playbackRateSupported) {
+      var currentPlaybackRate = this.props.controller.getPlaybackRate();
+      var currentPlaybackRateStr = currentPlaybackRate === 1.0 ? '標準' : String(currentPlaybackRate);
+      var currentPlaybackRateJSX = <span>{'速度（' + currentPlaybackRateStr + '）'}</span>;
+
+      finalControlBarItems.push(
+        <Menu className="oo-speed oo-control-bar-item" key="speed"
+          onSelect={this.handlePlaybackRate}
+          onOpenChange={this.onOpenChange}
+          openKeys={this.state.openKeys}
+          mode="horizontal"
+          openAnimation="slide-up"
+          openSubMenuOnMouseEnter={false}
+          closeSubMenuOnMouseLeave={false} >
+          <SubMenu title={currentPlaybackRateJSX} key="1">
+            <MenuItem className="oo-popup-menu" key="1.0">標準</MenuItem>
+            <MenuItem className="oo-popup-menu" key="1.4">1.4</MenuItem>
+          </SubMenu>
+        </Menu>
+      );
     }
 
     return finalControlBarItems;
