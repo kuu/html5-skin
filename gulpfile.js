@@ -33,7 +33,8 @@ var path = {
 var devServer = {
   host: '0.0.0.0',
   port: 4444,
-  file: 'sample.html',
+  file: './build/index.html',
+  root: './build',
   livereloadPort: 35729
 
 };
@@ -178,8 +179,15 @@ gulp.task('assets', function () {
 });
 
 // HTML pages
-gulp.task('pages', function () {
+gulp.task('pages', ['html'], function () {
   gulp.src(['iframe.html', 'amp_iframe.html'])
+    .pipe(gulp.dest('./build'));
+});
+
+// Main HTML
+gulp.task('html', function () {
+  gulp.src('sample.html')
+    .pipe(rename('index.html'))
     .pipe(gulp.dest('./build'));
 });
 
@@ -191,6 +199,7 @@ gulp.task('server', function() {
       port: devServer.livereloadPort
     },
     host: devServer.host,
+    root: devServer.root,
     fallback: devServer.file
   });
 });
