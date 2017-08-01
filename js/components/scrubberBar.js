@@ -6,6 +6,7 @@ var React = require('react'),
     ResizeMixin = require('../mixins/resizeMixin'),
     Thumbnail = require('./thumbnail'),
     ThumbnailCarousel = require('./thumbnailCarousel'),
+    Utils = require('./utils'),
     CONSTANTS = require('../constants/constants');
 
 var ScrubberBar = React.createClass({
@@ -15,6 +16,7 @@ var ScrubberBar = React.createClass({
     this.lastScrubX = null;
     this.isMobile = this.props.controller.state.isMobile;
     this.touchInitiated = false;
+    this.touchListenerSet = false;
 
     return {
       scrubberBarWidth: 0,
@@ -22,7 +24,7 @@ var ScrubberBar = React.createClass({
       scrubbingPlayheadX: 0,
       hoveringX: 0,
       currentPlayhead: 0,
-      transitionedDuringSeek: false
+      transitionedDuringSeek: false,
     };
   },
 
@@ -34,6 +36,11 @@ var ScrubberBar = React.createClass({
 
   componentDidMount: function() {
     this.handleResize();
+    if (this.isMobile && Utils.isChrome() && !this.touchListenerSet){
+      ReactDOM.findDOMNode(this.refs.scrubberBarPadding).addEventListener("touchstart", this.handleScrubberBarMouseDown, {passive: false});
+      ReactDOM.findDOMNode(this.refs.playheadPadding).addEventListener("touchstart", this.handlePlayheadMouseDown, {passive: false});
+      this.touchListenerSet = true;
+    }
   },
 
   componentWillReceiveProps: function(nextProps) {
@@ -50,6 +57,11 @@ var ScrubberBar = React.createClass({
     else{
       ReactDOM.findDOMNode(this).parentNode.removeEventListener("touchmove", this.handlePlayheadMouseMove);
       document.removeEventListener("touchend", this.handlePlayheadMouseUp, true);
+      if (Utils.isChrome() && this.touchListenerSet) {
+        ReactDOM.findDOMNode(this.refs.scrubberBarPadding).removeEventListener("touchstart", this.handleScrubberBarMouseDown, {passive: false});
+        ReactDOM.findDOMNode(this.refs.playheadPadding).removeEventListener("touchstart", this.handlePlayheadMouseDown, {passive: false});
+        this.touchListenerSet = false;
+      }
     }
   },
 
@@ -286,23 +298,45 @@ var ScrubberBar = React.createClass({
       }
     }
 
-    return (
-      <div className="oo-scrubber-bar-container" ref="scrubberBarContainer" onMouseOver={scrubberBarMouseOver} onMouseOut={scrubberBarMouseOut} onMouseMove={scrubberBarMouseMove}>
-        {thumbnailContainer}
-        {thumbnailCarousel}
-        <div className="oo-scrubber-bar-padding" ref="scrubberBarPadding" onMouseDown={scrubberBarMouseDown} onTouchStart={scrubberBarMouseDown}>
-          <div ref="scrubberBar" className={scrubberBarClassName} style={scrubberBarStyle}>
-            <div className="oo-buffered-indicator" style={bufferedIndicatorStyle}></div>
-            <div className="oo-hovered-indicator" style={hoveredIndicatorStyle}></div>
-            <div className={playedIndicatorClassName} style={playedIndicatorStyle}></div>
-            <div className="oo-playhead-padding" style={playheadPaddingStyle}
-              onMouseDown={playheadMouseDown} onTouchStart={playheadMouseDown}>
-              <div ref="playhead" className={playheadClassName} style={playheadStyle}></div>
+    if (this.isMobile && Utils.isChrome()) {
+      return (
+        // Do not set onTouchStart in Chrome because preventDefault() will be ignored if we set non-passive event listeners to document.
+        // See https://developers.google.com/web/updates/2017/01/scrolling-intervention
+        <div className="oo-scrubber-bar-container" ref="scrubberBarContainer" onMouseOver={scrubberBarMouseOver} onMouseOut={scrubberBarMouseOut} onMouseMove={scrubberBarMouseMove}>
+          {thumbnailContainer}
+          {thumbnailCarousel}
+          <div className="oo-scrubber-bar-padding" ref="scrubberBarPadding" onMouseDown={scrubberBarMouseDown}>
+            <div ref="scrubberBar" className={scrubberBarClassName} style={scrubberBarStyle}>
+              <div className="oo-buffered-indicator" style={bufferedIndicatorStyle}></div>
+              <div className="oo-hovered-indicator" style={hoveredIndicatorStyle}></div>
+              <div className={playedIndicatorClassName} style={playedIndicatorStyle}></div>
+              <div className="oo-playhead-padding" ref="playheadPadding" style={playheadPaddingStyle}
+                onMouseDown={playheadMouseDown}>
+                <div ref="playhead" className={playheadClassName} style={playheadStyle}></div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    );
+      );
+    } else {
+      return (
+        <div className="oo-scrubber-bar-container" ref="scrubberBarContainer" onMouseOver={scrubberBarMouseOver} onMouseOut={scrubberBarMouseOut} onMouseMove={scrubberBarMouseMove}>
+          {thumbnailContainer}
+          {thumbnailCarousel}
+          <div className="oo-scrubber-bar-padding" ref="scrubberBarPadding" onMouseDown={scrubberBarMouseDown} onTouchStart={scrubberBarMouseDown}>
+            <div ref="scrubberBar" className={scrubberBarClassName} style={scrubberBarStyle}>
+              <div className="oo-buffered-indicator" style={bufferedIndicatorStyle}></div>
+              <div className="oo-hovered-indicator" style={hoveredIndicatorStyle}></div>
+              <div className={playedIndicatorClassName} style={playedIndicatorStyle}></div>
+              <div className="oo-playhead-padding" ref="playheadPadding" style={playheadPaddingStyle}
+                onMouseDown={playheadMouseDown} onTouchStart={playheadMouseDown}>
+                <div ref="playhead" className={playheadClassName} style={playheadStyle}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
   }
 });
 
